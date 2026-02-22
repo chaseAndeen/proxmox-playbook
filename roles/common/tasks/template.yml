@@ -1,0 +1,85 @@
+---
+- name: "Check if Ubuntu Template {{ pve_ubuntu_template_id }} already exists"
+  ansible.builtin.command: "qm status {{ pve_ubuntu_template_id }}"
+  register: pve_ubuntu_vm_status
+  ignore_errors: true
+  changed_when: false
+
+- name: Create Ubuntu Cloud-Init Template
+  become: true
+  block:
+    - name: Ensure Proxmox snippet directory exists
+      ansible.builtin.file:
+        path: "{{ pve_ubuntu_snippet_path }}"
+        state: directory
+        mode: '0755'
+
+    - name: Generate Cloud-Init User-Data Snippet
+      ansible.builtin.copy:
+        dest: "{{ pve_ubuntu_snippet_path }}/ubuntu-{{ pve_ubuntu_release }}-base.yml"
+        content: |
+          #cloud-config
+          hostname: ubuntu-{{ pve_ubuntu_release }}
+          manage_etc_hosts: true
+          user: {{ proxmox_user }}
+          ssh_authorized_keys:
+            - {{ lookup('file', 'files/' + proxmox_user + '.pub') }}
+          chpasswd: { expire: False }
+          sudo: ALL=(ALL) NOPASSWD:ALL
+          package_update: true
+          package_upgrade: true
+          packages:
+            - qemu-guest-agent
+            - ufw
+          write_files:
+            - path: /etc/ssh/sshd_config.d/20-custom-port.conf
+              content: |
+                Port 2222
+          runcmd:
+            - systemctl enable --now qemu-guest-agent
+            - ufw allow 2222/tcp
+            - ufw --force enable
+            - systemctl restart ssh
+        mode: '0644'
+
+    - name: Download Ubuntu {{ pve_ubuntu_release }} Cloud Image
+      ansible.builtin.get_url:
+        url: "https://cloud-images.ubuntu.com/{{ pve_ubuntu_release }}/current/{{ pve_ubuntu_release }}-server-cloudimg-amd64.img"
+        dest: "/tmp/{{ pve_ubuntu_release }}.img"
+        mode: '0644'
+        force: yes 
+
+    - name: Create VM Shell for Template
+      ansible.builtin.command: >
+        qm create {{ pve_ubuntu_template_id }} 
+        --name "tpl-ubuntu-{{ pve_ubuntu_release }}" 
+        --memory {{ pve_ubuntu_template_mem }} 
+        --net0 virtio,bridge={{ pve_ubuntu_bridge }} 
+        --scsihw virtio-scsi-pci
+
+    - name: Import Cloud Image to ZFS Pool ({{ pve_ubuntu_storage_pool }})
+      ansible.builtin.command: "qm importdisk {{ pve_ubuntu_template_id }} /tmp/{{ pve_ubuntu_release }}.img {{ pve_ubuntu_storage_pool }}"
+
+    - name: Attach Disk and Cloud-Init Drive
+      ansible.builtin.command: >
+        qm set {{ pve_ubuntu_template_id }} 
+        --scsi0 {{ pve_ubuntu_storage_pool }}:vm-{{ pve_ubuntu_template_id }}-disk-0
+        --ide2 {{ pve_ubuntu_storage_pool }}:cloudinit 
+        --boot c --bootdisk scsi0 
+        --serial0 socket --vga serial0 --agent enabled=1
+
+    - name: Apply Cloud-Init Snippet and Network Defaults
+      ansible.builtin.command: >
+        qm set {{ pve_ubuntu_template_id }}
+        --cicustom "user={{ pve_ubuntu_snippet_storage }}:snippets/ubuntu-{{ pve_ubuntu_release }}-base.yml"
+        --ipconfig0 ip=dhcp
+
+    - name: Convert VM to Template
+      ansible.builtin.command: "qm template {{ pve_ubuntu_template_id }}"
+
+    - name: Cleanup temporary image
+      ansible.builtin.file:
+        path: "/tmp/{{ pve_ubuntu_release }}.img"
+        state: absent
+
+  when: pve_ubuntu_vm_status.rc is defined and pve_ubuntu_vm_status.rc != 0

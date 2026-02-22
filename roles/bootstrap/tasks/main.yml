@@ -1,0 +1,60 @@
+---
+- name: Bootstrap | Sysop account
+  block:
+    - name: Bootstrap | Install sudo
+      ansible.builtin.apt:
+        name: sudo
+        state: present
+        update_cache: false
+
+    - name: Bootstrap | Ensure sysop user exists
+      ansible.builtin.user:
+        name: "{{ proxmox_user }}"
+        shell: /bin/bash
+        groups: sudo
+        append: true
+        create_home: true
+
+    - name: Bootstrap | Install sysop authorized key
+      ansible.posix.authorized_key:
+        user: "{{ proxmox_user }}"
+        state: present
+        key: "{{ lookup('file', 'files/{{ proxmox_user }}.pub') }}"
+
+    - name: Bootstrap | Allow sysop passwordless sudo
+      ansible.builtin.copy:
+        dest: /etc/sudoers.d/{{ proxmox_user }}
+        content: |
+          {{ proxmox_user }} ALL=(ALL) NOPASSWD:ALL
+        owner: root
+        group: root
+        mode: '0440'
+
+- name: Bootstrap | SSH port transition
+  block:
+    - name: Bootstrap | Set SSH port to 2222
+      ansible.builtin.copy:
+        dest: /etc/ssh/sshd_config.d/10-ports.conf
+        content: |
+          Port {{ proxmox_ssh_port }}
+        owner: root
+        group: root
+        mode: '0644'
+      notify: restart ssh
+
+    - name: Bootstrap | Apply SSH restart now
+      ansible.builtin.meta: flush_handlers
+
+    - name: Bootstrap | Wait for SSH on new port
+      ansible.builtin.wait_for:
+        host: "{{ ansible_host | default(inventory_hostname) }}"
+        port: "{{ proxmox_ssh_port }}"
+        timeout: 30
+
+    - name: Bootstrap | Switch Ansible to new port
+      ansible.builtin.set_fact:
+        ansible_port: "{{ proxmox_ssh_port }}"
+
+    - name: Bootstrap | Confirm Ansible can reconnect
+      ansible.builtin.wait_for_connection:
+        timeout: 30

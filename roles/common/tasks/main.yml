@@ -1,0 +1,14 @@
+---
+- name: OS | System Base and Access
+  import_tasks: system.yml
+  tags: [system]
+
+- name: PVE | Storage Configuration
+  import_tasks: storage.yml
+
+- name: Security | Networking and Hardening
+  import_tasks: network.yml
+
+- name: VM | Template Creation
+  import_tasks: template.yml
+  tags: [template]

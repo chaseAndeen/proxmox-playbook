@@ -1,0 +1,7 @@
+---
+- name: Proxmox post install configuration
+  hosts: proxmox
+  become: true
+
+  roles:
+    - common

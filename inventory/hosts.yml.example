@@ -1,0 +1,13 @@
+proxmox:
+  hosts:
+    alpha-site:
+      ansible_host: 172.16.0.22
+      ansible_user: "{{ proxmox_user }}"
+      ansible_port: "{{ proxmox_ssh_port }}"
+      ansible_become: true
+      # Storage
+      pve_nvme_provision: true
+      pve_zfs_device: "/dev/nvme1n1"
+      pve_zfs_pool: "datashard"
+      pve_nvme_storage_id: "datashard"
+      pve_disable_local_lvm: true
