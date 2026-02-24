@@ -25,14 +25,25 @@ cert_domain_suffix: "example.com"
 cert_domain: "{{ inventory_hostname }}.{{ cert_domain_suffix }}"
 cert_email: admin@example.com
 
-# --- Ubuntu Template Configuration ---
-pve_ubuntu_release: "noble"
-pve_ubuntu_template_id: 9000
-pve_ubuntu_template_mem: 2048
-pve_ubuntu_storage_pool: "{{ pve_nvme_storage_id }}" 
-pve_ubuntu_bridge: "vmbr0"
+# --- Global Proxmox Settings ---
+pve_bridge: "vmbr0"
+pve_snippet_storage: "local"
+pve_snippet_path: "/var/lib/vz/snippets"
 
-
-# Snippet Storage (Proxmox standard path)
-pve_ubuntu_snippet_storage: "local"
-pve_ubuntu_snippet_path: "/var/lib/vz/snippets"
+# --- Cloud Image Inventory ---
+pve_cloud_templates:
+  - name: "ubuntu"
+    os_type: "ubuntu"
+    release: "noble"
+    template_id: 9000
+    template_mem: 2048
+    storage_pool: "{{ pve_nvme_storage_id }}"
+    url: "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
+    
+  - name: "debian"
+    os_type: "debian"
+    release: "12"
+    template_id: 9001
+    template_mem: 2048
+    storage_pool: "{{ pve_nvme_storage_id }}"
+    url: "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2"
