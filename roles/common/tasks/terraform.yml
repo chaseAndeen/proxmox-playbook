@@ -1,0 +1,34 @@
+---
+- name: Ensure Terraform User exists
+  ansible.builtin.command: "pveum user add terraform-prov@pve --password {{ terraform_api_password | default('ChooseAPassword123!') }}"
+  register: user_creation
+  failed_when: "user_creation.rc != 0 and 'already exists' not in user_creation.stderr"
+  changed_when: "user_creation.rc == 0"
+
+- name: Assign Built-in Roles to Terraform User
+  ansible.builtin.command: "pveum acl modify / -user terraform-prov@pve -role {{ item }}"
+  loop:
+    - PVEVMAdmin
+    - PVEDatastoreAdmin
+  changed_when: false
+
+- name: Check if API Token already exists
+  ansible.builtin.command: "pveum user token list terraform-prov@pve --output-format json"
+  register: existing_tokens
+  changed_when: false
+
+- name: Generate API Token if missing
+  ansible.builtin.command: "pveum user token add terraform-prov@pve terraform-token --privsep 0 --output-format json"
+  register: token_output
+  # We use a search check in case the json conversion is tricky
+  when: "'terraform-token' not in existing_tokens.stdout"
+  no_log: true 
+
+- name: Save API Token Secret to local file
+  ansible.builtin.copy:
+    content: "{{ (token_output.stdout | from_json).value }}"
+    dest: "{{ playbook_dir }}/terraform_token_secret.txt"
+    mode: '0600'
+  delegate_to: localhost
+  when: token_output.changed
+  become: false

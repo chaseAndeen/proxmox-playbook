@@ -12,3 +12,7 @@
 - name: VM | Template Creation
   import_tasks: template.yml
   tags: [template]
+
+- name: Terraform | API Configuration
+  import_tasks: terraform.yml
+  tags: [terraform]
