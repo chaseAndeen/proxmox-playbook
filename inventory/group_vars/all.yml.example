@@ -1,8 +1,18 @@
-proxmox_ssh_port: 1234
-proxmox_gui_port: 8006
-proxmox_user: user
-proxmox_debian_release: trixie
+---
+# --- AWS SSO / IAM Configuration ---
+aws_profile: "MyProfile"
+aws_region: "us-east-1"
 
+# --- Cloudflare (Common/Shared) ---
+cloudflare_token: "{{ lookup('amazon.aws.ssm', '/infra/common/cloudflare/api_token', profile=aws_profile, region=aws_region) }}"
+cloudflare_zone_id: "{{ lookup('amazon.aws.ssm', '/infra/common/cloudflare/zone_id', profile=aws_profile, region=aws_region) }}"
+
+# --- SSL Cert ---
+cert_domain_suffix: "example.com"
+cert_domain: "{{ inventory_hostname }}.{{ cert_domain_suffix }}"
+cert_email: admin@example.com
+
+# --- Firewall Settings ---
 mgmt_cidrs:
   - 172.16.0.0/24
   - 10.0.0.0/24
@@ -17,18 +27,15 @@ proxmox_firewall_ebtables: true
 proxmox_manage_cluster_fw: true
 proxmox_manage_host_fw: true
 
-cloudflare_token: "{{ lookup('amazon.aws.aws_ssm', '/proxmox/cloudflare/api_token', profile='ansible-ssm-reader') }}"
-cloudflare_zone_id: "{{ lookup('amazon.aws.aws_ssm', '/proxmox/cloudflare/zone_id', profile='ansible-ssm-reader') }}"
-
-
-cert_domain_suffix: "example.com"
-cert_domain: "{{ inventory_hostname }}.{{ cert_domain_suffix }}"
-cert_email: admin@example.com
-
 # --- Global Proxmox Settings ---
 pve_bridge: "vmbr0"
 pve_snippet_storage: "local"
 pve_snippet_path: "/var/lib/vz/snippets"
+
+proxmox_ssh_port: 1234
+proxmox_gui_port: 8006
+proxmox_user: user
+proxmox_debian_release: trixie
 
 # --- Cloud Image Inventory ---
 pve_cloud_templates:

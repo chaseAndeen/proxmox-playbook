@@ -5,14 +5,16 @@
 
 - name: PVE | Storage Configuration
   import_tasks: storage.yml
+  tags: [storage]
 
 - name: Security | Networking and Hardening
   import_tasks: network.yml
+  tags: [network]
 
-- name: VM | Template Creation
-  import_tasks: template.yml
-  tags: [template]
-
-- name: Terraform | API Configuration
+- name: API | Terraform configuration
   import_tasks: terraform.yml
   tags: [terraform]
+
+- name: API | Packer configuration
+  import_tasks: packer.yml
+  tags: [packer]
