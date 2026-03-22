@@ -1,60 +1,51 @@
 ---
 name: CI
-
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
-
 jobs:
   lint:
     name: Ansible Lint
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4.2.2
-
       - name: Set up Python
         uses: actions/setup-python@v5.4.0
         with:
           python-version: "3.12"
-
       - name: Install dependencies
         run: |
           pip install ansible-core ansible-lint
           ansible-galaxy collection install \
             community.general \
             amazon.aws \
+            community.aws \
             ansible.posix
-
       - name: Run ansible-lint
         run: ansible-lint
         env:
           ANSIBLE_ROLES_PATH: ./roles
-
   syntax-check:
     name: Syntax Check
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4.2.2
-
       - name: Set up Python
         uses: actions/setup-python@v5.4.0
         with:
           python-version: "3.12"
-
       - name: Install dependencies
         run: |
           pip install ansible-core
           ansible-galaxy collection install \
             community.general \
             amazon.aws \
+            community.aws \
             ansible.posix
-
       - name: Create stub inventory for syntax check
         run: |
           mkdir -p inventory/group_vars
@@ -120,25 +111,20 @@ jobs:
           pve_snippet_path: "/var/lib/vz/snippets"
           pve_cloud_templates: []
           EOF
-
       - name: Syntax check bootstrap
         run: >
           ansible-playbook playbooks/bootstrap.yml
           --syntax-check
           -i inventory/hosts.yml
-
       - name: Syntax check site
         run: >
           ansible-playbook playbooks/site.yml
           --syntax-check
           -i inventory/hosts.yml
-
       - name: Syntax check pbs
         run: >
           ansible-playbook playbooks/pbs.yml
           --syntax-check
           -i inventory/hosts.yml
-
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
