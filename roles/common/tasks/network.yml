@@ -1,6 +1,7 @@
 ---
 - name: Check current certificate status
-  ansible.builtin.shell: "pvenode cert info | grep -q '{{ cert_domain }}'"
+  ansible.builtin.shell:
+    cmd: "pvenode cert info | grep -q '{{ cert_domain }}'"
   register: cert_check
   failed_when: false
   changed_when: false
