@@ -12,7 +12,7 @@
   no_log: true
   when: not _amp_binary.stat.exists
 
-- name: AMP | Run GetAMP installation
+- name: AMP | Run GetAMP installation (async)
   ansible.builtin.shell:
     cmd: |
       export USE_ANSWERS="y"
@@ -21,22 +21,77 @@
       export ANSWER_SYSPASSWORD="{{ _amp_sys_password }}"
       export ANSWER_INSTALLDOCKER="y"
       export ANSWER_INSTALLSRCDSLIBS="y"
-      export ANSWER_CREATEDEFAULT="n"
       bash <(wget -qO- https://cubecoders.com/getamp.sh) >/var/log/getamp.log 2>&1
     executable: /bin/bash
   async: 1800
   poll: 0
+  register: _amp_install_async
   when: not _amp_binary.stat.exists
 
-- name: AMP | Wait for AMP binary
-  ansible.builtin.wait_for:
-    path: /opt/cubecoders/amp/ampinstmgr
-    timeout: 600
-
-- name: AMP | Wait for ADS to be ready
+- name: AMP | Wait for ADS port to be listening
   ansible.builtin.wait_for:
     host: "{{ ansible_host }}"
     port: "{{ amp_ads_port }}"
-    delay: 5
-    timeout: 300
+    delay: 10
+    timeout: 900
     state: started
+  when: not _amp_binary.stat.exists
+
+- name: AMP | Login to API
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host }}:{{ amp_ads_port }}/API/Core/Login"
+    method: POST
+    headers:
+      Accept: application/json
+      User-Agent: AnsibleAMPProvisioner/1.0
+    body_format: json
+    body:
+      username: "{{ amp_ads_admin_user }}"
+      password: "{{ _amp_admin_password }}"
+      token: ""
+      rememberMe: false
+    status_code: 200
+  register: _amp_login
+  when: not _amp_binary.stat.exists
+
+- name: AMP | Extract Session ID
+  ansible.builtin.set_fact:
+    _amp_session_id: "{{ _amp_login.json.sessionID }}"
+  when: not _amp_binary.stat.exists
+
+- name: AMP | Activate licence
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host }}:{{ amp_ads_port }}/API/Core/ActivateAMPLicence"
+    method: POST
+    headers:
+      Accept: application/json
+      User-Agent: AnsibleAMPProvisioner/1.0
+      Authorization: "Bearer {{ _amp_session_id }}"
+    body_format: json
+    body:
+      LicenceKey: "{{ _amp_licence_key }}"
+      QueryOnly: false
+    status_code: 200
+  when: not _amp_binary.stat.exists
+
+- name: AMP | Set Instance Key
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host }}:{{ amp_ads_port }}/API/Core/SetConfig"
+    method: POST
+    headers:
+      Accept: application/json
+      User-Agent: AnsibleAMPProvisioner/1.0
+      Authorization: "Bearer {{ _amp_session_id }}"
+    body_format: json
+    body:
+      node: "ADSModule.Defaults.NewInstanceKey"
+      value: "{{ _amp_licence_key }}"
+    status_code: 200
+  when: not _amp_binary.stat.exists
+
+#- name: ADS | Activate AMP licence via CLI
+#  ansible.builtin.shell:
+#    cmd: "su -l amp -c 'cd ~/.ampdata/instances/ADS01 && /opt/cubecoders/amp/ampinstmgr reactivate ADS01 {{ _amp_licence_key }}'"
+#  register: _amp_licence_result
+#  changed_when: true
+#  when: not _amp_binary.stat.exists
