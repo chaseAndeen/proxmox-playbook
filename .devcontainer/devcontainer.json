@@ -1,0 +1,28 @@
+{
+  "name": "infra-playbook",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "postCreateCommand": "ansible --version && ansible-galaxy collection list -p /usr/share/ansible/collections",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "redhat.ansible",
+        "amazonwebservices.aws-toolkit-vscode",
+        "ms-python.python"
+      ],
+      "settings": {
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "/bin/bash"
+          }
+        }
+      }
+    }
+  },
+  "mounts": [
+    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached"
+  ],
+  "remoteUser": "vscode"
+}

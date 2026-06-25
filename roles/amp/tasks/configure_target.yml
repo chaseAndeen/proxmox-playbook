@@ -40,15 +40,15 @@
     group: amp
     mode: "0644"
 
-#- name: Target | Set auth server URL
-#  ansible.builtin.lineinfile:
-#    path: "/home/amp/.ampdata/instances/ADS01/AMPConfig.conf"
-#    regexp: "^Login[.]AuthServerURL="
-#    line: "Login.AuthServerURL=http://{{ hostvars[groups['amp_ads'][0]].ansible_host }}:{{ amp_ads_port }}/"
-#    create: true
-#    owner: amp
-#    group: amp
-#    mode: "0644"
+- name: Target | Set auth server URL
+  ansible.builtin.lineinfile:
+    path: "/home/amp/.ampdata/instances/ADS01/AMPConfig.conf"
+    regexp: "^Login[.]AuthServerURL="
+    line: "Login.AuthServerURL=http://{{ hostvars[groups['amp_ads'][0]].ansible_host }}:{{ amp_ads_port }}/"
+    create: true
+    owner: amp
+    group: amp
+    mode: "0644"
 
 - name: Target | Start ADS01
   ansible.builtin.shell:
