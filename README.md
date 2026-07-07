@@ -48,6 +48,11 @@ Seed these parameters before running any playbook. Parameters marked *auto* are 
 | `/infra/svc/authentik/postgres_password` | SecureString | *auto* — Authentik PostgreSQL password |
 | `/infra/svc/authentik/bootstrap_token` | SecureString | *auto* — Authentik bootstrap API token |
 | `/infra/svc/oidc/<name>/client_secret` | SecureString | *auto* — OIDC client secret per `proxy_services` entry (e.g. `/infra/svc/oidc/pve/client_secret`) |
+| `/infra/svc/ldap/bind_password` | SecureString | *auto* — LDAP bind password for the `truenas-ldap-svc` Authentik service account |
+| `/infra/svc/ldap/outpost_token` | SecureString | *auto* — Authentik LDAP outpost token; fetched from the API after the ldap blueprint applies |
+| `/infra/amp/licence_key` | SecureString | CubeCoders AMP licence key — required before running `amp.yml` |
+| `/infra/amp/admin_password` | SecureString | AMP web UI admin password — used by GetAMP install and inter-node auth |
+| `/infra/amp/sys_password` | SecureString | System (Linux) password set for the `amp` OS user by GetAMP |
 
 ---
 
@@ -96,7 +101,10 @@ ansible-playbook -i inventory/hosts.yml playbooks/svc.yml
 ```
 Installs Docker, mounts NFS storage, configures UFW, and deploys Traefik, Authentik, and Homepage as Docker Compose stacks. Also:
 - Generates OIDC client secrets for each `proxy_services` entry and stores them in SSM
-- Templates the Authentik blueprint (`/blueprints/custom/proxy-services.yml`) and applies it on container start — creates OAuth2/OIDC providers and applications for each service
+- Generates an LDAP bind password for the TrueNAS service account and stores it in SSM
+- Templates and applies the `proxy-services` Authentik blueprint — creates OAuth2/OIDC providers and applications for each service
+- Templates and applies the `ldap` Authentik blueprint — creates the `truenas-ldap-svc` service account, LDAP provider, and `truenas-ldap-outpost`; fetches the outpost token and stores it in SSM
+- Starts the `authentik-ldap` container (LDAPS on port 636) and restarts it with the outpost token once the blueprint has run
 - Creates Traefik file-provider routes for each service in `proxy_services`
 
 **Post-run:**
@@ -114,9 +122,6 @@ UniFi OS Server runs as a dedicated VM (not a Docker container). Provision it vi
 # Configure the VM (install UniFi OS Server binary, configure UFW)
 ansible-playbook -i inventory/hosts.yml playbooks/unifi.yml
 ```
-
-**Post-run:**
-- Access UniFi OS Server at `https://unifi.<your-domain>/` — on first run the setup wizard allows restoring a `.unf` backup
 
 ### 7. Configure OIDC realms on PVE and PBS
 ```bash
@@ -199,4 +204,64 @@ ansible-playbook -i inventory/hosts.yml playbooks/unifi.yml
 
 # Redeploy Homepage (config or version change)
 ansible-playbook -i inventory/hosts.yml playbooks/svc.yml --tags homepage
+
+---
+
+## AMP (CubeCoders Application Management Panel)
+
+Deploys AMP ADS with controller (amp-01) and target (amp-02) nodes.
+
+### Deploy
+
+```bash
+# Full deployment (installs and configures)
+ansible-playbook -i inventory/hosts.yml playbooks/amp.yml
+
+# Step-by-step
+ansible-playbook -i inventory/hosts.yml playbooks/amp.yml --tags install
+ansible-playbook -i inventory/hosts.yml playbooks/amp.yml --limit amp_ads --tags configure,oidc
+ansible-playbook -i inventory/hosts.yml playbooks/amp.yml --limit amp_targets --tags configure,nfs
 ```
+
+### Manual Target Pairing
+
+AMP ADS inter-node authentication requires manual pairing via the web UI. After running the playbook:
+
+1. Open the AMP controller web UI: `http://192.168.20.21:8080`
+2. Login with admin credentials
+3. Navigate to: **ADS → Targets → Add Target**
+4. Enter the target node details:
+   - **Friendly Name:** amp-02
+   - **URL:** `http://192.168.20.22:8080/`
+   - **Username:** admin
+   - **Password:** (from SSM `/infra/amp/admin_password`)
+5. Click **Add Target**
+6. Verify the target shows **Connected** (green status)
+
+**Troubleshooting:** If pairing fails with "Token Rejected":
+- Ensure the target ADS is running
+- Check `Login.UseAuthServer=True` on the target
+- Verify `Login.AuthServerURL` points to the controller
+- Run `repairauth` on both nodes:
+  ```bash
+  su -l amp -c 'ampinstmgr -magic controller http://<controller-ip>:8080/'
+  su -l amp -c 'ampinstmgr -magic target http://<controller-ip>:8080/'
+  ```
+
+### OIDC Configuration
+
+AMP uses Authentik for SSO (local admin login is disabled). The `oidc.yml` task configures:
+- **Username Claim:** `preferred_username`
+- **Role Prefix:** `AMP_`
+- **Groups:** Add users to `AMP_Super Admins` or `AMP_Users` in Authentik
+
+The admin account in SSM (`/infra/amp/admin_password`) is used for:
+- GetAMP installation and initial setup
+- Inter-node ADS authentication (target → controller)
+- API operations
+
+It is NOT used for regular user login - only OIDC/Authentik handles authentication.
+
+### NFS Mount
+
+Target nodes mount TrueNAS NFS (`/mnt/vault/gamedata`) for game server data storage. Configure as a datastore in AMP after pairing.

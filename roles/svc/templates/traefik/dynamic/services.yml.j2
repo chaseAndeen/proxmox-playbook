@@ -1,6 +1,6 @@
 http:
   routers:
-{% for svc in proxy_services %}
+{% for svc in proxy_services_lan %}
     {{ svc.name }}:
       rule: "Host(`{{ svc.domain }}`)"
       entryPoints:
@@ -16,7 +16,7 @@ http:
 {% endfor %}
 
   services:
-{% for svc in proxy_services %}
+{% for svc in proxy_services_lan %}
     {{ svc.name }}-backend:
       loadBalancer:
         passHostHeader: true
@@ -28,14 +28,14 @@ http:
 {% endfor %}
 
 {% set ns = namespace(has_skip_verify=false) %}
-{% for svc in proxy_services %}
+{% for svc in proxy_services_lan %}
 {% if svc.backend_tls_skip_verify | default(false) %}
 {% set ns.has_skip_verify = true %}
 {% endif %}
 {% endfor %}
 {% if ns.has_skip_verify %}
   serversTransports:
-{% for svc in proxy_services if svc.backend_tls_skip_verify | default(false) %}
+{% for svc in proxy_services_lan if svc.backend_tls_skip_verify | default(false) %}
     {{ svc.name }}-transport:
       insecureSkipVerify: true
 {% endfor %}

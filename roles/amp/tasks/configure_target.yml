@@ -1,0 +1,168 @@
+---
+- name: Target | Fetch credentials from SSM
+  ansible.builtin.set_fact:
+    _amp_admin_password: "{{ lookup('amazon.aws.ssm_parameter', amp_ssm_admin_password, profile=aws_profile, region=aws_region) }}"
+  no_log: false
+
+- name: Target | Stop ADS01
+  ansible.builtin.shell:
+    cmd: "su -l amp -c '/opt/cubecoders/amp/ampinstmgr stop ADS01'"
+  failed_when: false
+  changed_when: true
+
+- name: Target | Set mode to Target
+  ansible.builtin.lineinfile:
+    path: "/home/amp/.ampdata/instances/ADS01/ADSModule.kvp"
+    regexp: "^ADS[.]Mode="
+    line: "ADS.Mode=Target"
+    create: true
+    owner: amp
+    group: amp
+    mode: "0644"
+
+- name: Target | Enable auth server
+  ansible.builtin.lineinfile:
+    path: "/home/amp/.ampdata/instances/ADS01/AMPConfig.conf"
+    regexp: "^Login[.]UseAuthServer="
+    line: "Login.UseAuthServer=True"
+    create: true
+    owner: amp
+    group: amp
+    mode: "0644"
+
+- name: Target | Enable passthru auth
+  ansible.builtin.lineinfile:
+    path: "/home/amp/.ampdata/instances/ADS01/AMPConfig.conf"
+    regexp: "^Security[.]EnablePassthruAuth="
+    line: "Security.EnablePassthruAuth=True"
+    create: true
+    owner: amp
+    group: amp
+    mode: "0644"
+
+- name: Target | Set auth server URL
+  ansible.builtin.lineinfile:
+    path: "/home/amp/.ampdata/instances/ADS01/AMPConfig.conf"
+    regexp: "^Login[.]AuthServerURL="
+    line: "Login.AuthServerURL=http://{{ hostvars[groups['amp_ads'][0]].ansible_host }}:{{ amp_ads_port }}/"
+    create: true
+    owner: amp
+    group: amp
+    mode: "0644"
+
+- name: Target | Start ADS01
+  ansible.builtin.shell:
+    cmd: "su -l amp -c '/opt/cubecoders/amp/ampinstmgr start ADS01'"
+  changed_when: true
+
+- name: Target | Wait for ADS to be ready
+  ansible.builtin.wait_for:
+    host: "{{ ansible_host }}"
+    port: "{{ amp_ads_port }}"
+    delay: 5
+    timeout: 120
+    state: started
+
+- name: Target | Login to target API
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host }}:{{ amp_ads_port }}/API/Core/Login"
+    method: POST
+    headers:
+      Accept: application/json
+      User-Agent: AnsibleAMPProvisioner/1.0
+    body_format: json
+    body:
+      username: "{{ amp_ads_admin_user }}"
+      password: "{{ _amp_admin_password }}"
+      token: ""
+      rememberMe: false
+    status_code: 200
+  register: _amp_tgt_login
+
+- name: Target | Get target instances
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host }}:{{ amp_ads_port }}/API/ADSModule/GetInstances"
+    method: POST
+    headers:
+      Accept: application/json
+      User-Agent: AnsibleAMPProvisioner/1.0
+      Authorization: "Bearer {{ _amp_tgt_login.json.sessionID }}"
+    body_format: json
+    body:
+      ForceIncludeSelf: true
+    status_code: 200
+  register: _amp_tgt_instances
+
+- name: Target | Extract target instance ID
+  ansible.builtin.set_fact:
+    _amp_target_instance_id: "{{ _amp_tgt_instances.json[0].InstanceId }}"
+
+- name: Target | Login to controller API
+  ansible.builtin.uri:
+    url: "http://{{ amp_ads_host }}:{{ amp_ads_port }}/API/Core/Login"
+    method: POST
+    headers:
+      Accept: application/json
+      User-Agent: AnsibleAMPProvisioner/1.0
+    body_format: json
+    body:
+      username: "{{ amp_ads_admin_user }}"
+      password: "{{ _amp_admin_password }}"
+      token: ""
+      rememberMe: false
+    status_code: 200
+  register: _amp_ctrl_login
+
+- name: Target | Get pairing code from controller
+  ansible.builtin.uri:
+    url: "http://{{ amp_ads_host }}:{{ amp_ads_port }}/API/ADSModule/GetTargetPairingCode"
+    method: POST
+    headers:
+      Accept: application/json
+      User-Agent: AnsibleAMPProvisioner/1.0
+      Authorization: "Bearer {{ _amp_ctrl_login.json.sessionID }}"
+    body_format: json
+    body: {}
+    status_code: 200
+  register: _amp_pairing_code
+
+- name: Target | Attach target to controller (called on controller)
+  ansible.builtin.uri:
+    url: "http://{{ amp_ads_host }}:{{ amp_ads_port }}/API/ADSModule/AttachADSWithPairingCode"
+    method: POST
+    headers:
+      Accept: application/json
+      User-Agent: AnsibleAMPProvisioner/1.0
+      Authorization: "Bearer {{ _amp_ctrl_login.json.sessionID }}"
+    body_format: json
+    body:
+      PairingCode: "{{ _amp_pairing_code.json.Result }}"
+      Friendly: "{{ inventory_hostname }}"
+      IsHTTPS: false
+      Host: "{{ ansible_host }}"
+      Port: "{{ amp_ads_port | int }}"
+      InstanceID: "{{ _amp_target_instance_id }}"
+    status_code: 200
+
+- name: Target | Set Auth Server URL
+  ansible.builtin.shell:
+    cmd: >-
+     su -l amp -c '/opt/cubecoders/amp/ampinstmgr 
+     reconfigure ADS01 
+     +Core.Login.AuthServerURL http://{{ hostvars[groups['amp_ads'][0]].ansible_host }}:{{ amp_ads_port }}/'
+  changed_when: true
+
+- name: Target | Repair Auth
+  ansible.builtin.shell:
+    cmd: >-
+     su -l amp -c '/opt/cubecoders/amp/ampinstmgr 
+     repairauth target http://{{ hostvars[groups['amp_ads'][0]].ansible_host }}:{{ amp_ads_port }}/'
+  changed_when: true
+
+- name: Target | Wait for ADS to be ready
+  ansible.builtin.wait_for:
+    host: "{{ ansible_host }}"
+    port: "{{ amp_ads_port }}"
+    delay: 5
+    timeout: 120
+    state: started

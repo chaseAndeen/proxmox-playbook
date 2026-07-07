@@ -1,0 +1,55 @@
+---
+- name: ADS | Stop ADS01
+  ansible.builtin.shell:
+    cmd: "su -l amp -c '/opt/cubecoders/amp/ampinstmgr stop ADS01'"
+  failed_when: false
+  changed_when: true
+# These should be done by a handler!
+
+- name: ADS | Enable passthru auth
+  ansible.builtin.lineinfile:
+    path: "/home/amp/.ampdata/instances/ADS01/AMPConfig.conf"
+    regexp: "^Security[.]EnablePassthruAuth="
+    line: "Security.EnablePassthruAuth=True"
+    create: true
+    owner: amp
+    group: amp
+    mode: "0644"
+
+- name: ADS | Set mode to Controller
+  ansible.builtin.lineinfile:
+    path: "/home/amp/.ampdata/instances/ADS01/ADSModule.kvp"
+    regexp: "^ADS[.]Mode="
+    line: "ADS.Mode=Controller"
+    create: true
+    owner: amp
+    group: amp
+    mode: "0644"
+
+# - name: ADS | Start ADS01
+#  ansible.builtin.shell:
+#    cmd: "su -l amp -c '/opt/cubecoders/amp/ampinstmgr start ADS01'"
+#  changed_when: true
+
+- name: ADS | Set Auth Server URL
+  ansible.builtin.shell:
+    cmd: >-
+     su -l amp -c '/opt/cubecoders/amp/ampinstmgr
+     reconfigure ADS01
+     +ADSModule.Defaults.DefaultAuthServerURL http://{{ hostvars[groups['amp_ads'][0]].ansible_host }}:{{ amp_ads_port }}/'
+  changed_when: true
+
+- name: ADS | Repair Auth
+  ansible.builtin.shell:
+    cmd: >-
+     su -l amp -c '/opt/cubecoders/amp/ampinstmgr 
+     repairauth controller http://{{ hostvars[groups['amp_ads'][0]].ansible_host }}:{{ amp_ads_port }}/'
+  changed_when: true
+
+- name: ADS | Wait for ADS to be ready
+  ansible.builtin.wait_for:
+    host: "{{ ansible_host }}"
+    port: "{{ amp_ads_port }}"
+    delay: 5
+    timeout: 120
+    state: started

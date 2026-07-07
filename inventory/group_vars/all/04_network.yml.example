@@ -1,0 +1,36 @@
+---
+mgmt_cidrs:
+  - 192.168.x.x/24
+  - 10.x.x.x/24
+
+pve_network_cidr: "{{ mgmt_cidrs | first }}"
+svc_network_cidr: "192.168.x.x/24"
+
+# LAN svc-01 firewall rules
+svc_firewall_rules:
+  - { port: "{{ proxmox_ssh_port }}", proto: tcp, src: "192.168.x.x/24", comment: "SSH" }
+  - { port: "{{ proxmox_ssh_port }}", proto: tcp, src: "10.x.x.x/24",    comment: "SSH" }
+  - { port: "80",  proto: tcp, src: "192.168.x.x/24", comment: "HTTP" }
+  - { port: "80",  proto: tcp, src: "10.x.x.x/24",    comment: "HTTP" }
+  - { port: "80",  proto: tcp, src: "192.168.x.x/24", comment: "HTTP (apps)" }
+  - { port: "443", proto: tcp, src: "192.168.x.x/24", comment: "HTTPS" }
+  - { port: "443", proto: tcp, src: "10.x.x.x/24",    comment: "HTTPS" }
+  - { port: "443", proto: tcp, src: "192.168.x.x/24", comment: "HTTPS (apps)" }
+  - { port: "636", proto: tcp, src: "192.168.x.x/24", comment: "LDAPS (TrueNAS LDAP auth)" }
+
+# DMZ svc-dmz-01 firewall rules
+svc_dmz_firewall_rules:
+  - { port: "{{ proxmox_ssh_port }}", proto: tcp, src: "192.168.x.x/24", comment: "SSH (mgmt)" }
+  - { port: "{{ proxmox_ssh_port }}", proto: tcp, src: "10.x.x.x/24",    comment: "SSH (mgmt)" }
+  - { port: "80",  proto: tcp, src: "0.0.0.0/0", comment: "HTTP (WAN)" }
+  - { port: "443", proto: tcp, src: "0.0.0.0/0", comment: "HTTPS (WAN)" }
+
+proxmox_firewall_enable_datacenter: true
+proxmox_firewall_enable_node: true
+proxmox_firewall_policy_in: DROP
+proxmox_firewall_policy_out: ACCEPT
+proxmox_firewall_policy_forward: ACCEPT
+proxmox_firewall_ebtables: true
+
+proxmox_manage_cluster_fw: true
+proxmox_manage_host_fw: true

@@ -1,0 +1,15 @@
+---
+svc_nfs_server: "{{ truenas_host }}"
+svc_nfs_export: "/mnt/pool/container_data"
+svc_traefik_domain: "traefik.svc.{{ base_domain }}"
+svc_authentik_domain: "authentik.svc.{{ base_domain }}"
+svc_homepage_domain: "homepage.svc.{{ base_domain }}"
+svc_truenas_host: "truenas.svc.{{ base_domain }}"
+svc_opnsense_domain: "fw.infra.{{ base_domain }}"
+
+# Authentik secrets stored in AWS SSM
+authentik_secret_key: "{{ lookup('amazon.aws.ssm_parameter', '/infra/svc/authentik/secret_key', profile=aws_profile, region=aws_region) }}"
+authentik_postgres_password: "{{ lookup('amazon.aws.ssm_parameter', '/infra/svc/authentik/postgres_password', profile=aws_profile, region=aws_region) }}"
+authentik_bootstrap_token: "{{ lookup('amazon.aws.ssm_parameter', '/infra/svc/authentik/bootstrap_token', profile=aws_profile, region=aws_region) }}"
+
+ldap_bind_password: "{{ lookup('amazon.aws.ssm_parameter', '/infra/svc/ldap/bind_password', profile=aws_profile, region=aws_region) }}"

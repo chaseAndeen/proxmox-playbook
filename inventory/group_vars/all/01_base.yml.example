@@ -1,0 +1,7 @@
+---
+base_domain: "example.com"
+cert_email: "admin@{{ base_domain }}"
+ansible_service_user: ansible
+truenas_host: "192.168.x.x"
+cloudflare_token: "{{ lookup('amazon.aws.ssm_parameter', '/infra/common/cloudflare/api_token', profile=aws_profile, region=aws_region) }}"
+cloudflare_zone_id: "{{ lookup('amazon.aws.ssm_parameter', '/infra/common/cloudflare/zone_id', profile=aws_profile, region=aws_region) }}"

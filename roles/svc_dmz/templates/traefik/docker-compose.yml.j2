@@ -1,0 +1,28 @@
+services:
+  traefik:
+    image: traefik:{{ svc_dmz_traefik_version }}
+    container_name: traefik
+    restart: unless-stopped
+    user: "{{ svc_dmz_container_uid }}:{{ svc_dmz_container_gid }}"
+    group_add:
+      - "{{ svc_dmz_docker_gid }}"
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "80:80"
+      - "443:443"
+    env_file:
+      - .env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - {{ svc_dmz_compose_dir }}/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - {{ svc_dmz_compose_dir }}/traefik/dynamic:/etc/traefik/dynamic:ro
+      - {{ svc_dmz_nfs_mount }}/svc-dmz-01/traefik:/data
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true

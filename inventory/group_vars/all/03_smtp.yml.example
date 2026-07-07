@@ -1,0 +1,8 @@
+---
+smtp_server: "email-smtp.{{ aws_region }}.amazonaws.com"
+smtp_port: 587
+smtp_from: "alerts@{{ base_domain }}"
+smtp_to: "admin@{{ base_domain }}"
+# SMTP credentials stored in AWS SSM
+smtp_user: "{{ lookup('amazon.aws.ssm_parameter', '/infra/common/smtp/user', profile=aws_profile, region=aws_region) }}"
+smtp_pass: "{{ lookup('amazon.aws.ssm_parameter', '/infra/common/smtp/pass', profile=aws_profile, region=aws_region) }}"
