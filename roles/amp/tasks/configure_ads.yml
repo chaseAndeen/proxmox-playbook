@@ -26,7 +26,7 @@
     group: amp
     mode: "0644"
 
-#- name: ADS | Start ADS01
+# - name: ADS | Start ADS01
 #  ansible.builtin.shell:
 #    cmd: "su -l amp -c '/opt/cubecoders/amp/ampinstmgr start ADS01'"
 #  changed_when: true

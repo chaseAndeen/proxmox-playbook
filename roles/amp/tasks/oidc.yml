@@ -23,20 +23,20 @@
         group: amp
         mode: "0644"
       loop:
-        - { regexp: "^Login[.]UseOIDC=",                        line: "Login.UseOIDC=True" }
-        - { regexp: "^Login[.]OIDCProviderFriendlyName=",       line: "Login.OIDCProviderFriendlyName=Authentik" }
-        - { regexp: "^Login[.]OIDCRedirectUri=",                line: "Login.OIDCRedirectUri=https://{{ amp_domain }}/" }
-        - { regexp: "^Login[.]OIDCAuthorizeEndpoint=",          line: "Login.OIDCAuthorizeEndpoint=https://{{ svc_authentik_domain }}/application/o/authorize/" }
-        - { regexp: "^Login[.]OIDCTokenEndpoint=",              line: "Login.OIDCTokenEndpoint=https://{{ svc_authentik_domain }}/application/o/token/" }
-        - { regexp: "^Login[.]OIDCUserInfoEndpoint=",           line: "Login.OIDCUserInfoEndpoint=https://{{ svc_authentik_domain }}/application/o/userinfo/" }
-        - { regexp: "^Login[.]OIDCValidationEndpoint=",         line: "Login.OIDCValidationEndpoint=https://{{ svc_authentik_domain }}/application/o/introspect/" }
-        - { regexp: "^Login[.]OIDCLogoutEndpoint=",             line: "Login.OIDCLogoutEndpoint=https://{{ svc_authentik_domain }}/application/o/amp/end-session/" }
-        - { regexp: "^Login[.]OIDCUsernameClaim=",              line: "Login.OIDCUsernameClaim=preferred_username" }
-        - { regexp: "^Login[.]OIDCClientID=",                   line: "Login.OIDCClientID=amp" }
-        - { regexp: "^Login[.]OIDCClientSecret=",               line: "Login.OIDCClientSecret={{ _amp_oidc_secret }}" }
-        - { regexp: "^Login[.]OIDCRoleNamePrefix=",             line: "Login.OIDCRoleNamePrefix=AMP_" }
+        - { regexp: "^Login[.]UseOIDC=", line: "Login.UseOIDC=True" }
+        - { regexp: "^Login[.]OIDCProviderFriendlyName=", line: "Login.OIDCProviderFriendlyName=Authentik" }
+        - { regexp: "^Login[.]OIDCRedirectUri=", line: "Login.OIDCRedirectUri=https://{{ amp_domain }}/" }
+        - { regexp: "^Login[.]OIDCAuthorizeEndpoint=", line: "Login.OIDCAuthorizeEndpoint=https://{{ svc_authentik_domain }}/application/o/authorize/" }
+        - { regexp: "^Login[.]OIDCTokenEndpoint=", line: "Login.OIDCTokenEndpoint=https://{{ svc_authentik_domain }}/application/o/token/" }
+        - { regexp: "^Login[.]OIDCUserInfoEndpoint=", line: "Login.OIDCUserInfoEndpoint=https://{{ svc_authentik_domain }}/application/o/userinfo/" }
+        - { regexp: "^Login[.]OIDCValidationEndpoint=", line: "Login.OIDCValidationEndpoint=https://{{ svc_authentik_domain }}/application/o/introspect/" }
+        - { regexp: "^Login[.]OIDCLogoutEndpoint=", line: "Login.OIDCLogoutEndpoint=https://{{ svc_authentik_domain }}/application/o/amp/end-session/" }
+        - { regexp: "^Login[.]OIDCUsernameClaim=", line: "Login.OIDCUsernameClaim=preferred_username" }
+        - { regexp: "^Login[.]OIDCClientID=", line: "Login.OIDCClientID=amp" }
+        - { regexp: "^Login[.]OIDCClientSecret=", line: "Login.OIDCClientSecret={{ _amp_oidc_secret }}" }
+        - { regexp: "^Login[.]OIDCRoleNamePrefix=", line: "Login.OIDCRoleNamePrefix=AMP_" }
         - { regexp: "^Login[.]OIDCNewUsersDisabledAtCreation=", line: "Login.OIDCNewUsersDisabledAtCreation=False" }
-        - { regexp: "^Login[.]AllowLoginFallback=",             line: "Login.AllowLoginFallback=False" }
+        - { regexp: "^Login[.]AllowLoginFallback=", line: "Login.AllowLoginFallback=False" }
       no_log: true
 
     - name: OIDC | ADS - Start ADS01

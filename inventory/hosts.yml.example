@@ -48,6 +48,14 @@ svc:
       ansible_port: "{{ proxmox_ssh_port }}"
       ansible_become: true
 
+svc_dmz:
+  hosts:
+    svc-dmz-01:
+      ansible_host: 192.168.60.10
+      ansible_user: "{{ ansible_service_user }}"
+      ansible_port: "{{ proxmox_ssh_port }}"
+      ansible_become: true
+
 amp_ads:
   hosts:
     amp-01:

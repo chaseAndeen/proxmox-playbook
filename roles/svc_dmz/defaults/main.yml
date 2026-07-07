@@ -1,0 +1,13 @@
+---
+svc_dmz_container_user: container_user
+svc_dmz_container_group: container_group
+svc_dmz_container_uid: 2001
+svc_dmz_container_gid: 2001
+svc_dmz_docker_gid: ""
+
+svc_dmz_compose_dir: /opt/compose
+
+svc_dmz_nfs_mount: /mnt/nfs/container_data
+svc_dmz_nfs_options: "defaults,_netdev,nfsvers=4,hard,intr"
+
+svc_dmz_traefik_version: "v3"

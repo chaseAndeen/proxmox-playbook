@@ -1,0 +1,12 @@
+---
+pve_oidc_admins:
+  - "admin@{{ base_domain }}"
+
+pbs_oidc_admins:
+  - "admin@{{ base_domain }}"
+
+amp_oidc_admins:
+  - "sysop"
+
+amp_oidc_superadmin_group: "AMP_Super Admins"
+amp_oidc_user_group: "AMP_Users"

@@ -1,0 +1,10 @@
+---
+unifi_domain: "unifi.svc.{{ base_domain }}"
+
+unifi_firewall_rules:
+  - { port: "{{ proxmox_ssh_port }}", proto: tcp, src: "192.168.x.x/24", comment: "SSH" }
+  - { port: "{{ proxmox_ssh_port }}", proto: tcp, src: "10.x.x.x/24",    comment: "SSH" }
+  - { port: "11443", proto: tcp, src: "0.0.0.0/0", comment: "UniFi OS Server web UI" }
+  - { port: "8080",  proto: tcp, src: "0.0.0.0/0", comment: "UniFi device inform" }
+  - { port: "3478",  proto: udp, src: "0.0.0.0/0", comment: "UniFi STUN" }
+  - { port: "10001", proto: udp, src: "0.0.0.0/0", comment: "UniFi L2 discovery" }

@@ -1,0 +1,11 @@
+---
+# WAN-facing services proxied by the DMZ Traefik instance.
+# Add entries here as you deploy external-facing services.
+proxy_services_wan: []
+
+# Example:
+#   - name: my-app
+#     label: "My App"
+#     domain: "my-app.dmz.{{ base_domain }}"
+#     backend_url: "http://localhost:8080"
+#     auth: none

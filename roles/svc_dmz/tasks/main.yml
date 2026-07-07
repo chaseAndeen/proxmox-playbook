@@ -1,0 +1,16 @@
+---
+- name: Svc DMZ | System packages and service account
+  ansible.builtin.import_tasks: system.yml
+  tags: [system]
+
+- name: Svc DMZ | NFS mount and data directories
+  ansible.builtin.import_tasks: nfs.yml
+  tags: [nfs]
+
+- name: Svc DMZ | Firewall rules
+  ansible.builtin.import_tasks: firewall.yml
+  tags: [firewall]
+
+- name: Svc DMZ | Traefik reverse proxy
+  ansible.builtin.import_tasks: traefik.yml
+  tags: [traefik]

@@ -1,0 +1,13 @@
+[Unit]
+Description=NFS mount — TrueNAS container data (DMZ)
+After=network-online.target
+Wants=network-online.target
+
+[Mount]
+What={{ truenas_host }}:/mnt/vault/container_data
+Where={{ svc_dmz_nfs_mount }}
+Type=nfs4
+Options={{ svc_dmz_nfs_options }}
+
+[Install]
+WantedBy=multi-user.target

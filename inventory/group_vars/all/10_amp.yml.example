@@ -1,0 +1,23 @@
+---
+amp_ads_host: "192.168.20.21"
+amp_ads_port: 8080
+amp_ads_admin_user: "admin"
+amp_admin_email: "admin@{{ base_domain }}"
+amp_domain: "amp.svc.{{ base_domain }}"
+
+amp_nfs_server: "{{ truenas_host }}"
+amp_nfs_export: "/mnt/pool/amp_backups"
+amp_nfs_mount_point: "/mnt/amp_backups"
+amp_nfs_opts: "defaults,nofail,_netdev,nfsvers=4"
+amp_nfs_uid: 2003
+amp_nfs_gid: 2003
+
+amp_ads_firewall_rules:
+  - { port: "{{ proxmox_ssh_port }}", proto: tcp, src: "192.168.x.x/24", comment: "SSH" }
+  - { port: "{{ proxmox_ssh_port }}", proto: tcp, src: "10.x.x.x/24",    comment: "SSH" }
+  - { port: "8080", proto: tcp, src: "192.168.x.x/24", comment: "AMP web UI (via Traefik)" }
+
+amp_target_firewall_rules:
+  - { port: "{{ proxmox_ssh_port }}", proto: tcp, src: "192.168.x.x/24", comment: "SSH" }
+  - { port: "{{ proxmox_ssh_port }}", proto: tcp, src: "10.x.x.x/24",    comment: "SSH" }
+  - { port: "8080", proto: tcp, src: "{{ amp_ads_host }}", comment: "ADS controller access" }

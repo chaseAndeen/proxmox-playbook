@@ -4,7 +4,7 @@ metadata:
   labels:
     blueprints.goauthentik.io/instantiate: "true"
 entries:
-{% for svc in proxy_services | selectattr('auth', 'in', ['oidc', 'forward_auth']) %}
+{% for svc in proxy_services_lan | selectattr('auth', 'in', ['oidc', 'forward_auth']) %}
 
   # =========================================================
   # {{ svc.label }}  (auth: {{ svc.auth }})
@@ -75,10 +75,10 @@ entries:
 
 {% endif %}
 {% endfor %}
-{% set forward_auth_services = proxy_services | selectattr('auth', 'equalto', 'forward_auth') | list %}
+{% set forward_auth_services = proxy_services_lan | selectattr('auth', 'equalto', 'forward_auth') | list %}
 {% if forward_auth_services | length > 0 %}
   # Bind all forward_auth proxy providers to the embedded outpost.
-  # This list is the full set — regenerated from proxy_services on every run.
+  # This list is the full set — regenerated from proxy_services_lan on every run.
   - model: authentik_outposts.outpost
     state: present
     identifiers:
